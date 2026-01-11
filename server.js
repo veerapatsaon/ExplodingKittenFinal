@@ -293,10 +293,12 @@ socket.on("playCard", ({ code, card, targetClientId, useCount, requestedCard }) 
         targetClientId,
         useCount: needed,
         requestedCard,
-        endAt: Date.now() + 5000 
+        endAt: Date.now() + 5000,
+        duration: 5000
     };
 
-    pushLog(room, "system", `⏳ ${player.name} ใช้ Combo แมว x${needed}`);
+    const logTitle = needed > 1 ? `Combo แมว x${needed}` : `การ์ด [${card}]`;
+const logKind = needed > 1 ? "combo" : card; // ใช้ชื่อการ์ดเป็น kind เลย เช่น "attack", "shuffle"
     io.to(code).emit("state", room);
     room.nopeTimer = setTimeout(() => resolvePendingAction(code), 5000);
 });
@@ -361,7 +363,8 @@ socket.on("playCard", ({ code, card, targetClientId, useCount, requestedCard }) 
         card: "COMBO_5",
         useCount: 5,
         requestedCard: requestedCard,
-        endAt: Date.now() + 5000
+        endAt: Date.now() + 5000,
+        duration: 5000
     };
 
     pushLog(room, "system", `⏳ ${player.name} จ่าย 5 ใบไม่ซ้ำเพื่อกู้ชีพ "${requestedCard}"`);
@@ -463,9 +466,15 @@ player.hand.push(drawnCard);
             room.turn = nextAlive(room, room.turn);
         }
         break;
-        case "โจมตี": room.attackStack += 2; room.turn = nextAlive(room, room.turn); break;
-        case "สับไพ่": room.deck = shuffle(room.deck); break;
-        case "ดูอนาคต": io.to(player.socketId).emit("futureCards", room.deck.slice(-3).reverse()); break;
+        case "โจมตี": room.attackStack += 2; room.turn = nextAlive(room, room.turn);
+        pushLog(room, "attack", `⚔️ ${player.name} ใช้การ์ด [โจมตี] (เพิ่มตาเล่นให้คนถัดไป)`);
+        break;
+        case "สับไพ่": room.deck = shuffle(room.deck); 
+        pushLog(room, "shuffle", `🔀 ${player.name} ใช้การ์ด [สับไพ่]`);
+        break;
+        case "ดูอนาคต": io.to(player.socketId).emit("futureCards", room.deck.slice(-3).reverse()); 
+        pushLog(room, "future", `👁️ ${player.name} ใช้การ์ด [ดูอนาคต]`);
+        break;
         case "เปลี่ยนอนาคต": io.to(player.socketId).emit("reorderFuture", room.deck.slice(-3).reverse()); return;
         // ใน resolvePendingAction ภายใน switch(card)
 case "COMBO_5": {
