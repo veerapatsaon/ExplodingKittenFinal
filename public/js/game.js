@@ -254,30 +254,32 @@ if (displayCardName === "COMBO_2" || displayCardName.startsWith("แมว")) {
         
 const updateTimer = () => {
     const now = Date.now();
-    const timeLeft = action.endAt - now; // เวลาที่เหลือจริง (มิลลิวินาที)
+    const timeLeft = action.endAt - now; 
     
-    // 1. คำนวณวินาทีให้แม่นยำ
-    let secondsContent = Math.ceil(timeLeft / 1000);
-    if (secondsContent < 0) secondsContent = 0;
+    // 🚩 กำหนดเวลาสูงสุดที่ยอมให้แสดง (เช่น 5 วินาที)
+    const maxSeconds = 5; 
+    const totalDuration = action.duration || 5000; 
 
-    // 🚩 ป้องกันเลขโดดไป 50: ถ้าวินาทีมากกว่า 10 (ซึ่งผิดปกติสำหรับ Nope) ให้แสดงแค่ 5 หรือตามจริง
-    // แต่ทางที่ดีที่สุดคือใช้ Math.min หรือเช็ค timeLeft
+    // 1. คำนวณวินาที และใช้ Math.min เพื่อไม่ให้เกิน 5 วิ
+    // ถึงแม้ timeLeft จะคำนวณได้ 50,000 (50 วิ) แต่มันจะถูกตัดเหลือแค่ 5 ครับ
+    let secondsContent = Math.ceil(timeLeft / 1000);
+    secondsContent = Math.max(0, Math.min(secondsContent, maxSeconds)); 
+    
     timerNumber.innerText = secondsContent;
 
     // 2. คำนวณหลอดเวลา (Progress Bar)
-    // action.duration ควรส่งมาจาก Server (เช่น 5000) 
-    // ถ้าไม่มี ให้ใช้ค่ามาตรฐานที่ระบบตั้งไว้ เช่น 5000 หรือ 7000
-    const totalDuration = action.duration || 5000; 
+    // ใช้ Math.min เพื่อให้หลอดเริ่มที่ 100% เสมอ ไม่ยาวทะลุจอ
     let percent = (timeLeft / totalDuration) * 100;
+    percent = Math.max(0, Math.min(percent, 100)); 
     
-    if (percent > 100) percent = 100;
-    if (percent < 0) percent = 0;
     timerBar.style.width = percent + "%";
 
-    // 3. เปลี่ยนสีเมื่อเหลือน้อย (Animation)
+    // 3. การแสดงผลสีและการสั่น (เหมือนเดิม)
     if (secondsContent <= 2) {
         timerNumber.style.color = "#ff4757";
-        timerNumber.classList.add("pulse-fast");
+        if (!timerNumber.classList.contains("pulse-fast")) {
+            timerNumber.classList.add("pulse-fast");
+        }
     } else {
         timerNumber.style.color = "white";
         timerNumber.classList.remove("pulse-fast");
@@ -285,7 +287,8 @@ const updateTimer = () => {
 
     if (timeLeft <= 0) {
         clearInterval(nopeInterval);
-        nopeOverlay.classList.add("hidden"); // ปิด Overlay ทันทีเมื่อหมดเวลา
+        const nopeOverlay = document.getElementById("nopeOverlay"); // ตรวจสอบ ID ให้ตรง
+        if (nopeOverlay) nopeOverlay.classList.add("hidden");
     nopeBtn.disabled = false;
     nopeBtn.innerText = "❌ ม่าย (NOPE)";
 }
